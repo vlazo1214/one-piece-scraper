@@ -12,11 +12,13 @@ DEBUG = True
 
 base_url = "https://tcbonepiecechapters.com/mangas/5/one-piece"
 
-if len(sys.argv) < 1:
-    print("enter ff or chrome and then starting chapter")
+if len(sys.argv) < 2:
+    print()
+    print("Enter ff or chrome and then number of chapters desired starting from the most recent one.")
+    print()
     exit()
 
-starting_chapter = sys.argv[2]
+num_chapters = int(sys.argv[2])
 
 if sys.argv[1] == 'ff':
     options = Options()
@@ -35,18 +37,37 @@ elif sys.argv[1] == 'chrome':
 try:
     if DEBUG: print("getting base url...")
     driver.get(base_url)
-    time.sleep(BUFFER_TIME)
+    time.sleep(BUFFER_TIME+3)
 
     if DEBUG: print("getting soup...")
     soup = BeautifulSoup(driver.page_source, 'html.parser')
-    
-    for a in soup.find_all('a', href=True):
-        if (a['href'].split('/')[0] == 'chapters'):
-            print(a['href'])
 
-except Exception as e:
-    print(e)
-    print("Exiting...")
+    counter = 0
+    chapter_links = []
+
+    if DEBUG: print("getting desired chapters...")
+    for a in soup.find_all('a', href=True):
+        if '/chapters/' in a['href'] and counter < num_chapters + 1:
+            chapter_links.append(a['href'])
+            counter += 1
+    
+    if DEBUG: print("getting pictures of pages...")
+    for link in chapter_links:
+        try:
+            driver.get(link)
+            time.sleep(BUFFER_TIME+3)
+            break
+
+        except Exception as e:
+            print(e)
+
 
 finally:
-    driver.quit()
+    try:
+        driver.quit()
+    except Exception as e:
+        if "The handle is invalid" in str(e):
+            print("Warning: Browser handle invalid, ignoring...")
+        else:
+            raise e  # Re-raise if it's a different error
+    print("Exiting...")
